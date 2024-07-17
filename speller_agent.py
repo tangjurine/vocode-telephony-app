@@ -4,6 +4,7 @@ from vocode.streaming.agent.abstract_factory import AbstractAgentFactory
 from vocode.streaming.agent.base_agent import BaseAgent, RespondAgent
 from vocode.streaming.agent.chat_gpt_agent import ChatGPTAgent
 from vocode.streaming.models.agent import AgentConfig, AgentType, ChatGPTAgentConfig
+from vocode.streaming.action.default_factory import DefaultActionFactory
 
 
 class SpellerAgentConfig(AgentConfig, type="agent_speller"):
@@ -65,7 +66,12 @@ class SpellerAgentFactory(AbstractAgentFactory):
         """
         # If the agent configuration type is CHAT_GPT, create a ChatGPTAgent.
         if isinstance(agent_config, ChatGPTAgentConfig):
-            return ChatGPTAgent(agent_config=agent_config)
+            return ChatGPTAgent(
+                agent_config=agent_config,
+                action_factory=
+                    DefaultActionFactory(actions = agent_config.actions) 
+                        if agent_config.actions 
+                        else DefaultActionFactory())
         # If the agent configuration type is agent_speller, create a SpellerAgent.
         elif isinstance(agent_config, SpellerAgentConfig):
             return SpellerAgent(agent_config=agent_config)

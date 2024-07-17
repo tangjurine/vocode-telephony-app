@@ -18,6 +18,7 @@ from vocode.streaming.models.message import BaseMessage
 from vocode.streaming.models.telephony import TwilioConfig
 from vocode.streaming.telephony.config_manager.redis_config_manager import RedisConfigManager
 from vocode.streaming.telephony.server.base import TelephonyServer, TwilioInboundCallConfig
+from vocode.streaming.action.end_conversation import EndConversationVocodeActionConfig
 
 # if running from python, this will load the local .env
 # docker-compose will load the .env file by itself
@@ -50,18 +51,23 @@ telephony_server = TelephonyServer(
     inbound_call_configs=[
         TwilioInboundCallConfig(
             url="/inbound_call",
-            # agent_config=ChatGPTAgentConfig(
-            #     initial_message=BaseMessage(text="What up"),
-            #     prompt_preamble="Have a pleasant conversation about life",
-            #     generate_responses=True,
-            # ),
-            # uncomment this to use the speller agent instead
-            agent_config=SpellerAgentConfig(
-                initial_message=BaseMessage(
-                    text="im a speller agent, say something to me and ill spell it out for you"
-                ),
-                generate_responses=False,
+            agent_config=ChatGPTAgentConfig(
+                initial_message=BaseMessage(text="What up"),
+                prompt_preamble="Collect the patient's name and date of birth, and then end the call.",
+                generate_responses=True,
+                actions = [
+                    EndConversationVocodeActionConfig(
+                        type="action_end_conversation"
+                    )
+                ]
             ),
+            # uncomment this to use the speller agent instead
+            # agent_config=SpellerAgentConfig(
+            #     initial_message=BaseMessage(
+            #         text="im a speller agent, say something to me and ill spell it out for you"
+            #     ),
+            #     generate_responses=False,
+            # ),
             twilio_config=TwilioConfig(
                 account_sid=os.environ["TWILIO_ACCOUNT_SID"],
                 auth_token=os.environ["TWILIO_AUTH_TOKEN"],
