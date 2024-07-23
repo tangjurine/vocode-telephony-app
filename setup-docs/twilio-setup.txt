@@ -1,0 +1,5 @@
+
+
+- paid some money to upgrade my account, so that this issue doesn't happen:
+can only call with a number with verified caller id, because I have a trial account:
+https://help.twilio.com/articles/223180048-How-to-Add-and-Remove-a-Verified-Phone-Number-or-Caller-ID-with-Twilio

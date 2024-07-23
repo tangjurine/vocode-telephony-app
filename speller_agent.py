@@ -1,11 +1,23 @@
-from typing import Optional, Tuple
+from typing import Optional, Sequence, Tuple
+from types import MethodType
 
+import json
+
+from submit_health_appointment_info import SubmitHealthAppointmentInfoActionConfig, SubmitHealthAppointmentInfo
+
+from vocode.streaming.action.abstract_factory import AbstractActionFactory
 from vocode.streaming.agent.abstract_factory import AbstractAgentFactory
 from vocode.streaming.agent.base_agent import BaseAgent, RespondAgent
 from vocode.streaming.agent.chat_gpt_agent import ChatGPTAgent
 from vocode.streaming.models.agent import AgentConfig, AgentType, ChatGPTAgentConfig
-from vocode.streaming.action.default_factory import DefaultActionFactory
+from vocode.streaming.action.default_factory import DefaultActionFactory, CONVERSATION_ACTIONS
+from vocode.streaming.models.actions import ActionConfig, ActionType
+from vocode.streaming.action.end_conversation import EndConversation
 
+from vocode.streaming.utils import events_manager
+from vocode.streaming.models.events import Event, EventType
+
+from loguru import logger
 
 class SpellerAgentConfig(AgentConfig, type="agent_speller"):
     """Configuration for SpellerAgent. Inherits from AgentConfig."""
@@ -48,6 +60,33 @@ class SpellerAgent(RespondAgent[SpellerAgentConfig]):
         """
         return "".join(c + " " for c in human_input), False
 
+class HealthAppointmentActionFactory(AbstractActionFactory):
+    def __init__(self, actions: Sequence[ActionConfig] | dict = {}):
+        self.actions = {
+            **CONVERSATION_ACTIONS,
+            SubmitHealthAppointmentInfoActionConfig.type_string(): SubmitHealthAppointmentInfo,
+        }
+        for action_config in actions:
+            if isinstance(action_config, SubmitHealthAppointmentInfoActionConfig):
+                self.health_appointment_info_container = action_config.health_appointment_info_container
+                self.health_appointment_scheduler = action_config.health_appointment_scheduler
+
+    def create_action(self, action_config: ActionConfig):
+        if action_config.type not in self.actions:
+            raise Exception(f"Action type not supported by Agent config. action type: {action_config.type} actions: {self.actions}")
+
+        action_class = self.actions[action_config.type]
+
+        action = action_class(action_config)
+        return action
+    
+class EventsManager(events_manager.EventsManager):
+    def __init__(self, ):
+        super().__init__(subscriptions=[EventType.PHONE_CALL_ENDED])
+
+    async def handle_event(self, event: Event):
+        if event.type == EventType.PHONE_CALL_ENDED:
+            pass
 
 class SpellerAgentFactory(AbstractAgentFactory):
     """Factory class for creating agents based on the provided agent configuration."""
@@ -69,7 +108,7 @@ class SpellerAgentFactory(AbstractAgentFactory):
             return ChatGPTAgent(
                 agent_config=agent_config,
                 action_factory=
-                    DefaultActionFactory(actions = agent_config.actions) 
+                    HealthAppointmentActionFactory(actions = agent_config.actions) 
                         if agent_config.actions 
                         else DefaultActionFactory())
         # If the agent configuration type is agent_speller, create a SpellerAgent.

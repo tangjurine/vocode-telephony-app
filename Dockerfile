@@ -8,5 +8,6 @@ RUN poetry config virtualenvs.create false
 RUN poetry install --no-dev --no-interaction --no-ansi
 COPY main.py /code/main.py
 COPY speller_agent.py /code/speller_agent.py
+COPY submit_health_appointment_info.py /code/submit_health_appointment_info.py
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3000"]
